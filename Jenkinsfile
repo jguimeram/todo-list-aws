@@ -67,10 +67,11 @@ pipeline {
                 sam build
                 sam deploy \
                 --stack-name staging-todo-list-aws \
+                --resolve-s3 \
                 --capabilities CAPABILITY_IAM \
-                --no-confirm-changeset \
-                --no-fail-on-empty-changeset
                 '''
+                /* --no-confirm-changeset \
+                --no-fail-on-empty-changeset */
             }
         }
 
