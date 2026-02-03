@@ -57,6 +57,12 @@ pipeline {
             }
         }
 
+        stage('Deploy') {
+            steps {
+                echo 'from deploy'
+            }
+        }
+
         stage('Rest Test') {
             steps {
                 echo 'rest test'
