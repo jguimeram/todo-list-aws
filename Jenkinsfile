@@ -66,6 +66,12 @@ pipeline {
                 sh'''
                 sam build
                 sam validate --region us-east-1
+                sam deploy \
+                --stack-name staging-todo-list-aws \
+                --resolve-s3 \
+                --capabilities CAPABILITY_IAM \
+                --no-confirm-changeset \
+                --no-fail-on-empty-changeset
                 '''
             }
         }
