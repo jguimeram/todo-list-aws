@@ -10,6 +10,10 @@ pipeline {
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
+                echo '---- WHO AM I? ----'
+                sh'''
+                echo whoami
+                '''
             }
         }
 
@@ -59,7 +63,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'from deploy'
+                sh'''
+                sam build
+                sam validate --region us-east-1
+                '''
             }
         }
 
