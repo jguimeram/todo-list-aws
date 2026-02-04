@@ -98,7 +98,7 @@ pipeline {
                     git add -A
                     git commit -m "test git"
                     git checkout -B master
-                    git push -u origin master
+                    git push --up-stream --force origin master
                     '''
                 }
             }
