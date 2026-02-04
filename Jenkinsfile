@@ -23,7 +23,7 @@ pipeline {
                 python3 -m venv .venv
                 . .venv/bin/activate
                 PYTHONPATH=$PWD
-                pip install flake8 bandit requests
+                pip install flake8 bandit requests pytest
                 '''
             }
         }
