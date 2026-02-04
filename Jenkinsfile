@@ -91,7 +91,9 @@ pipeline {
         stage('Promote') {
             steps {
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                    sh'''
                     echo $GITHUB
+                    '''
                 }
             }
         }
