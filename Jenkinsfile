@@ -23,7 +23,7 @@ pipeline {
                 python3 -m venv .venv
                 . .venv/bin/activate
                 PYTHONPATH=$PWD
-                pip install flake8 bandit
+                pip install flake8 bandit requests
                 '''
             }
         }
@@ -76,8 +76,13 @@ pipeline {
         }
 
         stage('Rest Test') {
+            //BASE URL issue
             steps {
-                echo 'rest test'
+                sh'''
+                   python3 -m venv .venv
+                   . .venv/bin/activate
+                   pytest test/integration/todoApiTest.py
+                  '''
             }
         }
 
