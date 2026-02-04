@@ -97,6 +97,7 @@ pipeline {
                     echo "#test" >> TEST.md
                     git add -A
                     git commit -m "test git"
+                    git checkout -B master
                     git push -u origin master
                     '''
                 }
