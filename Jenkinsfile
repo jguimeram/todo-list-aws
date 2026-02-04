@@ -79,6 +79,8 @@ pipeline {
             //BASE URL issue
             steps {
                 sh'''
+                   BASE_URL=$(aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
+                   echo $BASE_URL
                    python3 -m venv .venv
                    . .venv/bin/activate
                    pytest test/integration/todoApiTest.py
