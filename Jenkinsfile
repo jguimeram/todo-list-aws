@@ -12,7 +12,7 @@ pipeline {
                 echo WORKSPACE
                 echo '---- WHO AM I? ----'
                 sh'''
-                echo whoami
+                whoami
                 '''
             }
         }
@@ -94,10 +94,12 @@ pipeline {
                     sh'''
                     git remote remove origin
                     git remote add origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
+                    git checkout -B master
                     echo "#test" >> TEST.md
                     git add -A
                     git commit -m "test git"
-                    git checkout -B master
+                    git tag -f release
+                    git push origin release --force
                     git push --set-upstream --force origin master
                     '''
                 }
