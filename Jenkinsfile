@@ -98,7 +98,7 @@ pipeline {
                     date >> TEST.md
                     git add -A
                     git commit -m "test git"
-                    git tag -f release -a "release version"
+                    git tag -f release
                     git push origin --tags --force
                     git push --set-upstream --force origin master
                     '''
