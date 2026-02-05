@@ -95,11 +95,11 @@ pipeline {
                     git remote remove origin
                     git remote add origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
                     git checkout -B master
-                    echo "#test" >> TEST.md
+                    date >> TEST.md
                     git add -A
                     git commit -m "test git"
-                    git tag -f release
-                    git push origin release --force
+                    git tag -f release -a "release version"
+                    git push origin --tags --force
                     git push --set-upstream --force origin master
                     '''
                 }
