@@ -17,7 +17,7 @@ pipeline {
             }
         }
 
-        stage('Set Environment') {
+/*         stage('Set Environment') {
             steps {
                 sh'''
                 python3 -m venv .venv
@@ -102,6 +102,6 @@ pipeline {
                     '''
                 }
             }
-        }
+        } */
     }
 }
