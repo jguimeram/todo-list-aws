@@ -96,11 +96,14 @@ pipeline {
                     git remote remove origin
                     git remote add origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
                     git config --global merge.ours.driver true
+                    git checkout staging
                     date >> TEST.md
                     git add -A
-                    git commit -m "promoting" && git tag -f release
-                    git push origin master --follow-tags
-                    git merge staging
+                    git commit -m "release"
+                    git push origin staging
+                    git checkout master
+                    git merge origin
+                    git push origin master
                     '''
                 }
             }
