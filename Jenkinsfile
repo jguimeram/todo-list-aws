@@ -91,14 +91,14 @@ pipeline {
         stage('Promote') {
             steps {
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                    //la rama staging es la creada por defecto
                     sh'''
                     whoami
                     git remote remove origin
                     git remote add origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
                     git config --global merge.ours.driver true
-                    git switch -c staging
                     git push origin staging
-                    git checkout master
+                    git switch -c master
                     git merge staging
                     git push origin master
                     '''
