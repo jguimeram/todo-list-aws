@@ -97,7 +97,6 @@ pipeline {
                     git remote remove origin
                     git remote add origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
                     git config --global merge.ours.driver true
-                    git push origin staging
                     git switch -c master
                     git merge staging
                     git push origin master
