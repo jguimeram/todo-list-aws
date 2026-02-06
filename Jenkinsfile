@@ -101,8 +101,7 @@ pipeline {
                     git fetch origin master
                     git checkout -B master origin/master
                     git merge staging
-                    git tag -a "Release"
-                    git push origin master --follow-tags
+                    git push origin master
                     '''
                 }
             }
