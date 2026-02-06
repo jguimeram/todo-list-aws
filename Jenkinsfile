@@ -98,7 +98,7 @@ pipeline {
                     git config --global merge.ours.driver true
                     git switch -c staging
                     git push origin staging
-                    git switch master
+                    git checkout master
                     git merge staging
                     git push origin master
                     '''
