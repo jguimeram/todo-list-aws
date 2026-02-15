@@ -42,6 +42,7 @@ pipeline {
                 --capabilities CAPABILITY_IAM \
                 --parameter-overrides Stage="production" \
                 --no-disable-rollback \
+                --save-params \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset
                 '''
