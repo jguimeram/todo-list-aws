@@ -40,6 +40,7 @@ pipeline {
                 --region us-east-1 \
                 --resolve-s3 \
                 --capabilities CAPABILITY_IAM \
+                --parameter-overrides Stage="production" \
                 --no-disable-rollback \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset

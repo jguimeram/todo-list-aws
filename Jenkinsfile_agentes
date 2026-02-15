@@ -50,6 +50,7 @@ pipeline {
                 --resolve-s3 \
                 --capabilities CAPABILITY_IAM \
                 --no-disable-rollback \
+                --parameter-overrides Stage="production" \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset
                 whoami
