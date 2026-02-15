@@ -7,7 +7,9 @@ pipeline {
                 echo '---- CLEAN BEFORE BUILD STARTS ----'
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
-                checkout scmGit(branches: [[name: '*/develop']], extensions: [authorInChangelog(), firstBuildChangelog()], userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                checkout scmGit(
+                branches: [[name: '*/develop']],
+                userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
                 echo '---- WHO AM I? ----'
@@ -64,7 +66,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh'''
-                curl -L https://raw.githubusercontent.com/jguimeram/todo-list-aws-config/refs/heads/staging/samconfig.toml -o samconfig.toml
                 ls -la
                 sam build
                 sam deploy --config-env staging \
@@ -97,23 +98,25 @@ pipeline {
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
                     sh"""
                     # 1. Update the remote URL once (using set-url is cleaner than remove/add)
+                    git config user.email "jenkins@yourdomain.com"
+                    git config user.name "Jenkins CI"
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
                     # 2. Update TEST.md and push to staging directly
                     git checkout develop
+                    git pull origin develop
                     date >> TEST.md
                     git add -A
-                    git commit -m "date on changelog"
-                    git push origin develop
+                    git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
                     # 3. Merge to master and tag without an extra checkout if possible
-                    git fetch origin master
                     git checkout master
+                    git pull origin master
                     git merge develop --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
-                    # 4. Atomic Push (Pushing branch and tags in one go)
-                    git push origin master --tags
+                    # Push everything at once (both branches and tags)
+                    git push origin develop master --tags
                     """
                 }
             }

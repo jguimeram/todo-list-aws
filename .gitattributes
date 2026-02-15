@@ -1,2 +1,3 @@
 Jenkinsfile merge=ours
 Jenkinsfile_agentes merge=ours
+samconfig.toml merge=ours
