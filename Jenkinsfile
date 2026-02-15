@@ -74,6 +74,7 @@ pipeline {
                 --resolve-s3 \
                 --capabilities CAPABILITY_IAM \
                 --no-disable-rollback \
+                --parameter-overrides Stage="staging" \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset
                 '''
@@ -97,26 +98,31 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
                     sh"""
-                    # 1. Update the remote URL once (using set-url is cleaner than remove/add)
+                    # 1. Update remote URL
                     git config user.email "jenkins@yourdomain.com"
                     git config user.name "Jenkins CI"
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
-                    # 2. Update TEST.md and push to staging directly
+                    # 2. Update TEST.md with Build Number
                     git checkout develop
                     git pull origin develop
                     date >> TEST.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
-                    # 3. Merge to master and tag without an extra checkout if possible
+                    # 3. Merge to master
+                    git fetch origin master
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
-                    # Push everything at once (both branches and tags)
+                    # Push everything
                     git push origin develop master --tags
+
+                    # Who am I?
+                    whoami
+                    hostname
                     """
                 }
             }
