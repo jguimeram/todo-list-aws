@@ -75,8 +75,9 @@ pipeline {
                 --capabilities CAPABILITY_IAM \
                 --no-disable-rollback \
                 --parameter-overrides Stage="staging" \
+                --save-params \
                 --no-confirm-changeset \
-                --no-fail-on-empty-changeset
+                --no-fail-on-empty-changeset \
                 '''
             }
         }
