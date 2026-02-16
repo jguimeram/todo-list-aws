@@ -141,7 +141,7 @@ pipeline {
                     echo "2 - Update changelog"
                     git checkout develop
                     git pull origin develop
-                    date >> CHANGELOG.md
+                    date >> TEST.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
