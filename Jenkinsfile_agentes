@@ -58,7 +58,6 @@ pipeline {
                 hostname
                 '''
                 script {
-                    // Fixed the flag spacing here: --stack-name, --query, --region, --output
                     env.BASE_URL = sh(returnStdout: true, script: "aws cloudformation describe-stacks --stack-name production-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text").trim()
 
                     writeFile file: 'rest_api.txt', text: env.BASE_URL
