@@ -8,7 +8,7 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                branches: [[name: '*/develop']],
+                branches: [[name: '*/test/develop']],
                 userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
@@ -95,33 +95,33 @@ pipeline {
             }
         }
 
-        stage('Promote') {
+          stage('Promote') {
             steps {
+                unstash name: 'code'
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
                     sh"""
-                    # 1. Update remote URL
+                    echo "1. Update remote URL"
                     git config user.email "jenkins@yourdomain.com"
                     git config user.name "Jenkins CI"
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
-                    # 2. Update TEST.md with Build Number
-                    git checkout develop
-                    git pull origin develop
-                    date >> TEST.md
+                    echo "2 - Update changelog"
+                    git checkout test/develop
+                    git pull origin test/develop
+                    date >> CHANGELOG.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
-                    # 3. Merge to master
-                    git fetch origin master
-                    git checkout master
-                    git pull origin master
-                    git merge develop --no-edit
+                    echo "3 - Merge to master"
+                    git checkout test/master
+                    git pull origin test/master
+                    git merge test/develop --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
-                    # Push everything
-                    git push origin develop master --tags
+                    echo "4 - Push everything"
+                    git push origin test/develop test/master --tags
 
-                    # Who am I?
+                    echo "Who am I?"
                     whoami
                     hostname
                     """
@@ -129,9 +129,10 @@ pipeline {
             }
         }
     }
-        post {
-        always {
-            build job: 'todo-list-aws-cd-pipeline'
+        
+    post {
+        success {
+            build job: 'todo-list-aws-cd-pipeline-agents'
         }
-        }
+    }
 }
