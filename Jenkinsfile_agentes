@@ -139,20 +139,20 @@ pipeline {
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
                     echo "2 - Update changelog"
-                    git checkout develop-agents
-                    git pull origin develop-agents
+                    git checkout develop
+                    git pull origin develop
                     date >> CHANGELOG.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
                     echo "3 - Merge to master"
-                    git checkout master-agents
-                    git pull origin master-agents
-                    git merge develop-agents --no-edit
+                    git checkout master
+                    git pull origin master
+                    git merge develop --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
                     echo "4 - Push everything"
-                    git push origin develop-agents master-agents --tags
+                    git push origin develop master --tags
 
                     echo "Who am I?"
                     whoami
@@ -165,7 +165,7 @@ pipeline {
 
     post {
         success {
-            build job: 'test-todo-list-aws-cd-pipeline-agents'
+            build job: 'todo-list-aws-cd-pipeline-agents'
         }
     }
 }
