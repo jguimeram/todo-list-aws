@@ -9,7 +9,7 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                branches: [[name: '*/test/develop-agents']],
+                branches: [[name: '*/develop']],
                 userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
@@ -119,7 +119,7 @@ pipeline {
                     python3 -m venv .venv
                     . .venv/bin/activate
                     echo "Targeting URL: $BASE_URL"
-                    pytest test/integration/todoApiTest.py
+                    pytest integration/todoApiTest.py
                     whoami
                     hostname
                     rm -v rest_api.txt
@@ -139,20 +139,20 @@ pipeline {
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
                     echo "2 - Update changelog"
-                    git checkout test/develop-agents
-                    git pull origin test/develop-agents
+                    git checkout develop-agents
+                    git pull origin develop-agents
                     date >> CHANGELOG.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
                     echo "3 - Merge to master"
-                    git checkout test/master-agents
-                    git pull origin test/master-agents
-                    git merge test/develop-agents --no-edit
+                    git checkout master-agents
+                    git pull origin master-agents
+                    git merge develop-agents --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
                     echo "4 - Push everything"
-                    git push origin test/develop-agents test/master-agents --tags
+                    git push origin develop-agents master-agents --tags
 
                     echo "Who am I?"
                     whoami
