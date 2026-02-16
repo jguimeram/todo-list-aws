@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+    options { skipDefaultCheckout() }
+    stages {
+        stage('Get Code') {
+            agent { label 'built-in' }
+            steps {
+                echo '---- CLEAN BEFORE BUILD STARTS ----'
+                cleanWs()
+                echo '---- DOWNLOAD REPO ----'
+                checkout scmGit(
+                branches: [[name: '*/master']],
+                userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                echo '---- WORKSPACE ----'
+                echo WORKSPACE
+                echo '---- WHO AM I? ----'
+                sh'''
+                whoami
+                hostname
+                '''
+
+                stash name: 'code', includes:'**' //includes everything
+            }
+        }
+
+        stage('Set Environment') {
+            agent { label 'python' }
+            steps {
+                unstash name: 'code'
+                sh'''
+                python3 -m venv .venv
+                . .venv/bin/activate
+                PYTHONPATH=$PWD
+                pip install requests pytest
+                whoami
+                hostname
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            agent { label 'built-in' }
+            steps {
+                unstash name: 'code'
+                sh '''
+                sam build
+                sam deploy --config-env production \
+                --stack-name production-todo-list-aws \
+                --region us-east-1 \
+                --resolve-s3 \
+                --capabilities CAPABILITY_IAM \
+                --no-disable-rollback \
+                --parameter-overrides Stage="production" \
+                --save-params \
+                --no-confirm-changeset \
+                --no-fail-on-empty-changeset
+                whoami
+                hostname
+                '''
+                script {
+                    // Fixed the flag spacing here: --stack-name, --query, --region, --output
+                    env.BASE_URL = sh(returnStdout: true, script: "aws cloudformation describe-stacks --stack-name production-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text").trim()
+
+                    writeFile file: 'rest_api.txt', text: env.BASE_URL
+                }
+                stash name: 'base_url', includes: 'rest_api.txt'
+            }
+        }
+
+        stage('Rest Test') {
+            agent { label 'agent-02' }
+            steps {
+                unstash name: 'code'
+                unstash name: 'base_url'
+                script {
+                    env.BASE_URL = readFile('rest_api.txt').trim()
+                }
+                // Using triple single quotes is fine because env.BASE_URL is now
+                // a real environment variable on this agent.
+                sh '''
+                    python3 -m venv .venv
+                    . .venv/bin/activate
+                    echo "Targeting URL: $BASE_URL"
+                    pytest -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
+                    rm -v rest_api.txt
+                    whoami
+                    hostname
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
