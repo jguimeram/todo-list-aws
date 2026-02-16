@@ -8,7 +8,7 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                    branches: [[name: '*/master']],
+                    branches: [[name: '*/test/master']],
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
