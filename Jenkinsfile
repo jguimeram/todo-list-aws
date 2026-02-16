@@ -131,7 +131,7 @@ pipeline {
         
     post {
         success {
-            build job: 'test-todo-list-aws-cd-pipeline-agents'
+            build job: 'test-todo-list-aws-cd-pipeline'
         }
     }
 }
