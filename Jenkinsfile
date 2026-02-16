@@ -8,7 +8,7 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                branches: [[name: '*/test/develop']],
+                branches: [[name: '*/develop']],
                 userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
@@ -105,20 +105,20 @@ pipeline {
                     git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
 
                     echo "2 - Update changelog"
-                    git checkout test/develop
-                    git pull origin test/develop
+                    git checkout develop
+                    git pull origin develop
                     date >> CHANGELOG.md
                     git add -A
                     git commit -m "Update changelog - Build #${BUILD_NUMBER}"
 
                     echo "3 - Merge to master"
-                    git checkout test/master
-                    git pull origin test/master
-                    git merge test/develop --no-edit
+                    git checkout master
+                    git pull origin master
+                    git merge develop --no-edit
                     git tag -a "Release-${env.BUILD_NUMBER}" -m "Release version ${env.BUILD_NUMBER}"
 
                     echo "4 - Push everything"
-                    git push origin test/develop test/master --tags
+                    git push origin develop master --tags
 
                     echo "Who am I?"
                     whoami
@@ -131,7 +131,7 @@ pipeline {
         
     post {
         success {
-            build job: 'test-todo-list-aws-cd-pipeline'
+            build job: 'todo-list-aws-cd-pipeline'
         }
     }
 }
