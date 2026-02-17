@@ -62,6 +62,7 @@ pipeline {
 
                     writeFile file: 'rest_api.txt', text: env.BASE_URL
                 }
+
                 stash name: 'base_url', includes: 'rest_api.txt'
             }
         }
@@ -79,10 +80,36 @@ pipeline {
                     . .venv/bin/activate
                     echo "Targeting URL: $BASE_URL"
                     pytest -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
-                    rm -v rest_api.txt
                     whoami
                     hostname
                 '''
+            }
+        }
+
+        stage('Promote') {
+            agent { label 'built-in' }
+            steps {
+                unstash name: 'code'
+                withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                    sh"""
+                    echo "1. Update remote URL"
+                    git config user.email "jenkins@yourdomain.com"
+                    git config user.name "Jenkins CI"
+                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
+
+                    echo "2 - Add samconfig"
+                    git checkout master
+                    git pull origin master
+                    git add -A
+
+                    echo "3 - Push samconfig"
+                    git push origin master
+
+                    echo "Who am I?"
+                    whoami
+                    hostname
+                    """
+                }
             }
         }
     }
