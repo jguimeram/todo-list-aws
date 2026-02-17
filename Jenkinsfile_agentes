@@ -71,7 +71,7 @@ pipeline {
             agent { label 'agent-02' }
             steps {
                 unstash name: 'code'
-                unstash name: 'base_url'
+                unstash name: 'updated_config'
                 script {
                     env.BASE_URL = readFile('rest_api.txt').trim()
                 }
