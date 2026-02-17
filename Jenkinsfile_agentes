@@ -63,7 +63,7 @@ pipeline {
                     writeFile file: 'rest_api.txt', text: env.BASE_URL
                 }
 
-                stash name: 'base_url', includes: 'rest_api.txt'
+                stash name: 'updated_config', includes: 'samconfig.toml, rest_api.txt'
             }
         }
 
@@ -90,6 +90,7 @@ pipeline {
             agent { label 'built-in' }
             steps {
                 unstash name: 'code'
+                unstash name: 'updated_config'
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
                     sh"""
                     echo "1. Update remote URL"
