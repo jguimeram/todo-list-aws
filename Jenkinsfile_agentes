@@ -100,11 +100,12 @@ pipeline {
 
                     echo "2 - Add samconfig"
                     git checkout master
-                    git pull origin master
-                    git add samconfig.toml
+                    git fetch origin master
+                    git add -A
+                    git commit -m "add samconfig.toml"
 
                     echo "3 - Push samconfig"
-                    git push -u origin master
+                    git push origin master
 
                     echo "Who am I?"
                     whoami
