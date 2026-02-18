@@ -22,6 +22,14 @@ pipeline {
                 whoami
                 hostname
                 '''
+                script {
+                        def msg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                        if (msg.contains('[ci skip]')) {
+                        currentBuild.result = 'NOT_BUILT'
+                        return
+                        }
+                }
+            }
 
                 stash name: 'code', includes:'**' //includes everything
             }
@@ -138,16 +146,17 @@ pipeline {
                     git pull origin develop
                     date >> CHANGELOG.md
                     git add -A
-                    git commit -m "Update changelog - Build #${BUILD_NUMBER}-config"
+                    git commit -m "Update changelog - Build #${BUILD_NUMBER}-config-[ci-skip]"
 
                     echo "3 - Merge to master"
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}-config" -m "Release version ${env.BUILD_NUMBER}-config"
+                    # git tag -a "Release-${env.BUILD_NUMBER}-configdev" -m "Release version ${env.BUILD_NUMBER}-configdev"
 
                     echo "4 - Push everything"
-                    git push origin develop master --tags
+                    # git push origin develop master --tags
+                    git push origin develop master
 
                     echo "Who am I?"
                     whoami
