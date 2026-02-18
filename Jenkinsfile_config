@@ -126,33 +126,41 @@ pipeline {
             agent { label 'built-in' }
             steps {
                 unstash name: 'code'
-                withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
-                    sh"""
-                    echo "1. Update remote URL"
-                    git config user.email "jenkins@yourdomain.com"
-                    git config user.name "Jenkins CI"
-                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
+                script {
+                    def msg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    if (msg.contains('[ci skip]')) {
+                        currentBuild.result = 'NOT_BUILT'
+                        return  // exits the script block
+                    }
 
-                    echo "2 - Update changelog"
-                    git checkout develop
-                    git pull origin develop
-                    date >> CHANGELOG.md
-                    git add -A
-                    git commit -m "Update changelog - Build #${BUILD_NUMBER}-config"
+                    // everything inside script so return actually works
+                    withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                        sh """
+                        echo "1. Update remote URL"
+                        git config user.email "jenkins@yourdomain.com"
+                        git config user.name "Jenkins CI"
+                        git remote set-url origin https://jenkins:${GITHUB}@github.com/jguimeram/todo-list-aws.git
 
-                    echo "3 - Merge to master"
-                    git checkout master
-                    git pull origin master
-                    git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}-config" -m "Release version ${env.BUILD_NUMBER}-config"
+                        echo "2 - Update changelog"
+                        git checkout develop
+                        git pull origin develop
+                        date >> CHANGELOG.md
+                        git add -A
+                        git commit -m "Update changelog - Build #${BUILD_NUMBER} [ci skip]"
 
-                    echo "4 - Push everything"
-                    git push origin develop master --tags
+                        echo "3 - Merge to master"
+                        git checkout master
+                        git pull origin master
+                        git merge develop --no-edit
 
-                    echo "Who am I?"
-                    whoami
-                    hostname
-                    """
+                        echo "4 - Push everything"
+                        git push origin develop master
+
+                        echo "Who am I?"
+                        whoami
+                        hostname
+                        """
+                    }
                 }
             }
         }
