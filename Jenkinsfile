@@ -6,7 +6,7 @@ pipeline {
             steps {
                 echo '---- CLEAN BEFORE BUILD STARTS ----'
                 cleanWs()
-                echo '---- DOWNLOAD REPO ----'
+                echo '---- DOWNLOAD REPO MASTER ----'
                 checkout scmGit(
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
@@ -29,7 +29,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh'''
-                echo "---- DEPLOY ----"
+                echo "---- DEPLOY PRODUCTION ----"
                 sam build
                 sam deploy \
                 --template template.yaml \
@@ -49,6 +49,7 @@ pipeline {
 
         stage('Rest Test') {
             steps {
+                echo '---- REST TESTS ----'
                 sh'''
                    python3 -m venv .venv
                    . .venv/bin/activate
@@ -57,6 +58,11 @@ pipeline {
                    pytest -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
                   '''
             }
+        }
+    }
+       post {
+        always {
+             cleanWs()
         }
     }
 }
