@@ -1,5 +1,5 @@
 pipeline {
-    agent  { label 'built-in' }
+    agent { label 'built-in' }
     options { skipDefaultCheckout() }
     stages {
         stage('Get Code') {
@@ -8,56 +8,49 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                branches: [[name: '*/develop']],
-                userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                    branches: [[name: '*/develop']],
+                    userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']]
+                )
                 echo '---- WORKSPACE ----'
-                echo WORKSPACE
+                // Fixed: WORKSPACE is an env variable
+                echo "${env.WORKSPACE}"
             }
         }
 
         stage('Set Environment') {
             steps {
-                sh'''
+                sh '''
                 python3 -m venv .venv
                 . .venv/bin/activate
-                PYTHONPATH=$PWD
+                export PYTHONPATH=$PWD
                 pip install requests pytest flake8 bandit
                 '''
             }
         }
 
-        stage('Static Tests')
-        {
-            parallel
-            {
+        stage('Static Tests') {
+            parallel {
                 stage('Flake8') {
                     steps {
-                            echo '---- STATIC ----'
-                            sh'''
-                            python3 -m venv .venv
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh '''
                             . .venv/bin/activate
                             flake8 --exit-zero --format=pylint src > flake8.out
-                            '''     
-                    }
-                    post {
-                        always{
-                        recordIssues qualityGates: [], sourceCodeRetention: 'NEVER', tools: [flake8(pattern: 'flake8.out')]   
+                            '''
                         }
+                        recordIssues qualityGates: [], sourceCodeRetention: 'NEVER', tools: [flake8(pattern: 'flake8.out')]
                     }
                 }
 
                 stage('Security') {
                     steps {
-                            sh'''
-                            python3 -m venv .venv
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh '''
                             . .venv/bin/activate
                             bandit --exit-zero -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
-                    }
-                    post{
-                        always{
-                             recordIssues qualityGates: [], sourceCodeRetention: 'NEVER', tools: [pyLint(pattern: 'bandit.out')]
                         }
+                        recordIssues qualityGates: [], sourceCodeRetention: 'NEVER', tools: [pyLint(pattern: 'bandit.out')]
                     }
                 }
             }
@@ -65,8 +58,8 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh'''
-                echo "---- DEPLOY ----"
+                sh '''
+                echo "---- DEPLOY STAGING ----"
                 sam build
                 sam deploy \
                 --template template.yaml \
@@ -79,7 +72,7 @@ pipeline {
                 --parameter-overrides Stage="staging" \
                 --save-params \
                 --no-confirm-changeset \
-                --no-fail-on-empty-changeset \
+                --no-fail-on-empty-changeset
                 '''
             }
         }
@@ -87,38 +80,38 @@ pipeline {
         stage('Rest Test') {
             steps {
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                sh'''
-                   python3 -m venv .venv
-                   . .venv/bin/activate
-                   export BASE_URL=$(aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
-                   echo $BASE_URL
-                   pytest test/integration/todoApiTest.py
-                  '''
+                    sh '''
+                    . .venv/bin/activate
+                    export BASE_URL=$(aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
+                    echo $BASE_URL
+                    pytest test/integration/todoApiTest.py
+                    '''
                 }
             }
         }
 
-          stage('Promote') {
+        stage('Promote') {
             steps {
                 withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
-                    sh"""
+                    sh """
+                    #!/bin/bash
                     echo "---- UPDATE REMOTE URL ----"
                     git config user.email "jenkins@yourdomain.com"
                     git config user.name "Jenkins CI"
-                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
-
+                    git remote set-url origin https://jenkins:${GITHUB}@github.com/jguimeram/todo-list-aws.git
+                    
                     echo "---- UPDATE CHANGELOG ----"
                     git checkout develop
                     git pull origin develop
-                    echo "Build #${BUILD_NUMBER}-R1" >> CHANGELOG.md
-                    git add -A
-                    git commit -m "Update changelog - Build #${BUILD_NUMBER}-R1"
+                    echo "Build #${env.BUILD_NUMBER}-R1" >> CHANGELOG.md
+                    git add CHANGELOG.md
+                    git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R1"
 
                     echo "---- MERGE TO MASTER ----"
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}R1" -m "Release version ${env.BUILD_NUMBER}-R1"
+                    git tag -a "Release-${env.BUILD_NUMBER}-R1" -m "Release version ${env.BUILD_NUMBER}-R1"
 
                     echo "--- PUSH ----"
                     git push origin develop master --tags
@@ -127,10 +120,11 @@ pipeline {
             }
         }
     }
-        
+
     post {
         success {
-            build job: 'todo-list-aws-cd-pipeline'
+            cleanWs()
+            build job: 'todo-list-aws-cd-pipeline', wait: false
         }
     }
 }
