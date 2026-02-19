@@ -84,8 +84,9 @@ pipeline {
                     . .venv/bin/activate
                     export BASE_URL=$(aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
                     echo $BASE_URL
-                    pytest test/integration/todoApiTest.py
+                    pytest --junitxml=result-rest.xml test/integration/todoApiTest.py
                     '''
+                    junit 'result-rest.xml'
                 }
             }
         }
@@ -124,7 +125,7 @@ pipeline {
     post {
         success {
             cleanWs()
-            build job: 'todo-list-aws-cd-pipeline', wait: false
+            build job: 'todo-list-aws-cd-pipeline'
         }
     }
 }
