@@ -104,7 +104,7 @@ pipeline {
 
                     echo "2 - Add samconfig"
                     git checkout master
-                    git fetch origin master
+                    git pull origin master
                     git add -A
                     git commit -m "add samconfig.toml"
 
