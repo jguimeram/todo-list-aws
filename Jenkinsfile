@@ -12,10 +12,6 @@ pipeline {
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
-                echo '---- WHO AM I? ----'
-                sh'''
-                whoami
-                '''
             }
         }
 
@@ -33,8 +29,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh'''
+                echo "---- DEPLOY ----"
                 sam build
-                sam deploy --config-env production \
+                sam deploy \
+                --template template.yaml \
+                --config-env production \
                 --stack-name production-todo-list-aws \
                 --region us-east-1 \
                 --resolve-s3 \
@@ -49,7 +48,6 @@ pipeline {
         }
 
         stage('Rest Test') {
-            //BASE URL issue
             steps {
                 sh'''
                    python3 -m venv .venv
