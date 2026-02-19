@@ -9,29 +9,28 @@ pipeline {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scmGit(
-                branches: [[name: '*/develop']],
-                userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                    branches: [[name: '*/develop']],
+                    userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
                 echo '---- DOWNLOAD SAMCONFIG ----'
-                sh'''
+                sh '''
                 curl -L https://raw.githubusercontent.com/jguimeram/todo-list-aws-config/refs/heads/staging/samconfig.toml -o samconfig.toml
                 '''
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
                 echo '---- WHO AM I? ----'
-                sh'''
+                sh '''
                 whoami
                 hostname
                 '''
                 script {
-                        def msg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
-                        if (msg.contains('[ci skip]')) {
+                    def msg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    if (msg.contains('[ci skip]')) {
+                        echo '[CI SKIP] found'
                         currentBuild.result = 'NOT_BUILT'
-                        return
-                        }
+                        throw new org.jenkinsci.plugins.workflow.steps.FlowInterruptedException(hudson.model.Result.NOT_BUILT)
+                    }
                 }
-            }
-
-                stash name: 'code', includes:'**' //includes everything
+                stash name: 'code', includes: '**'
             }
         }
 
@@ -39,7 +38,7 @@ pipeline {
             agent { label 'python' }
             steps {
                 unstash name: 'code'
-                sh'''
+                sh '''
                 python3 -m venv .venv
                 . .venv/bin/activate
                 PYTHONPATH=$PWD
@@ -50,22 +49,20 @@ pipeline {
             }
         }
 
-        stage('Static Tests')
-        {
-            parallel
-            {
+        stage('Static Tests') {
+            parallel {
                 stage('Flake8') {
                     agent { label 'agent-01' }
                     steps {
                         unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             echo '---- STATIC ----'
-                            sh'''
-                                python3 -m venv .venv
-                                . .venv/bin/activate
-                                 flake8 --exit-zero --format=pylint src > flake8.out
-                                 whoami
-                                 hostname
+                            sh '''
+                            python3 -m venv .venv
+                            . .venv/bin/activate
+                            flake8 --exit-zero --format=pylint src > flake8.out
+                            whoami
+                            hostname
                             '''
                             recordIssues qualityGates: [[integerThreshold: 8, threshold: 8.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [flake8(pattern: 'flake8.out')]
                         }
@@ -77,7 +74,7 @@ pipeline {
                     steps {
                         unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            sh'''
+                            sh '''
                             python3 -m venv .venv
                             . .venv/bin/activate
                             bandit --exit-zero -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
@@ -103,7 +100,6 @@ pipeline {
                 '''
                 script {
                     env.BASE_URL = sh(returnStdout: true, script: "aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text").trim()
-
                     writeFile file: 'rest_api.txt', text: env.BASE_URL
                 }
                 stash name: 'base_url', includes: 'rest_api.txt'
@@ -119,13 +115,13 @@ pipeline {
                     env.BASE_URL = readFile('rest_api.txt').trim()
                 }
                 sh '''
-                    python3 -m venv .venv
-                    . .venv/bin/activate
-                    echo "Targeting URL: $BASE_URL"
-                    pytest test/integration/todoApiTest.py
-                    whoami
-                    hostname
-                    rm -fv rest_api.txt
+                python3 -m venv .venv
+                . .venv/bin/activate
+                echo "Targeting URL: $BASE_URL"
+                pytest test/integration/todoApiTest.py
+                whoami
+                hostname
+                rm -fv rest_api.txt
                 '''
             }
         }
@@ -134,35 +130,33 @@ pipeline {
             agent { label 'built-in' }
             steps {
                 unstash name: 'code'
-                withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
-                    sh"""
-                    echo "1. Update remote URL"
-                    git config user.email "jenkins@yourdomain.com"
-                    git config user.name "Jenkins CI"
-                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
+                    withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                        sh """
+                        echo "1. Update remote URL"
+                        git config user.email "jenkins@yourdomain.com"
+                        git config user.name "Jenkins CI"
+                        git remote set-url origin https://jenkins:${GITHUB}@github.com/jguimeram/todo-list-aws.git
 
-                    echo "2 - Update changelog"
-                    git checkout develop
-                    git pull origin develop
-                    date >> CHANGELOG.md
-                    git add -A
-                    git commit -m "Update changelog - Build #${BUILD_NUMBER}-config-[ci-skip]"
+                        echo "2 - Update changelog"
+                        git checkout develop
+                        git pull origin develop
+                        date >> CHANGELOG.md
+                        git add -A
+                        git commit -m "Update changelog - Build #${BUILD_NUMBER} [ci skip]"
 
-                    echo "3 - Merge to master"
-                    git checkout master
-                    git pull origin master
-                    git merge develop --no-edit
-                    # git tag -a "Release-${env.BUILD_NUMBER}-configdev" -m "Release version ${env.BUILD_NUMBER}-configdev"
+                        echo "3 - Merge to master"
+                        git checkout master
+                        git pull origin master
+                        git merge develop --no-edit
 
-                    echo "4 - Push everything"
-                    # git push origin develop master --tags
-                    git push origin develop master
+                        echo "4 - Push everything"
+                        git push origin develop master
 
-                    echo "Who am I?"
-                    whoami
-                    hostname
-                    """
-                }
+                        echo "Who am I?"
+                        whoami
+                        hostname
+                        """
+                    }
             }
         }
     }
