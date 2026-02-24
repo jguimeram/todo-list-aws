@@ -11,3 +11,4 @@ bandit.out
 rest_api.txt
 RET*.md
 .jenkins
+result-rest.xml
