@@ -12,7 +12,6 @@ pipeline {
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']]
                 )
                 echo '---- WORKSPACE ----'
-                // Fixed: WORKSPACE is an env variable
                 echo "${env.WORKSPACE}"
             }
         }
