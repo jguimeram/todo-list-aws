@@ -105,7 +105,7 @@ pipeline {
                     git checkout develop
                     git pull origin develop
                     echo "Build #${env.BUILD_NUMBER}-R1" >> CHANGELOG.md
-                    git add CHANGELOG.md
+                    git add -A
                     git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R1"
 
                     echo "---- MERGE TO MASTER ----"
