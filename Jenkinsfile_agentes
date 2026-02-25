@@ -1,0 +1,134 @@
+pipeline {
+    agent any
+    options { skipDefaultCheckout() }
+    stages {
+        stage('Get Code') {
+            agent { label 'built-in' }
+            steps {
+                echo '---- CLEAN BEFORE BUILD STARTS ----'
+                cleanWs()
+                echo '---- DOWNLOAD REPO ----'
+                checkout scmGit(
+                branches: [[name: '*/master']],
+                userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                echo '---- WORKSPACE ----'
+                echo "${env.WORKSPACE}"
+                sh'''
+                echo "---- WHO AM I? ----"
+                whoami
+                echo "---- HOSTNAME ----"
+                hostname
+                '''
+
+                stash name: 'code', includes:'**' //includes everything
+            }
+        }
+
+        stage('Set Environment') {
+            agent { label 'python' }
+            steps {
+                unstash name: 'code'
+                sh '''
+                python3 -m venv .venv
+                . .venv/bin/activate
+                PYTHONPATH=$PWD
+                pip install requests pytest
+                echo "---- WHO AM I? ----"
+                whoami
+                echo "---- HOSTNAME ----"
+                hostname
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            agent { label 'built-in' }
+            steps {
+                unstash name: 'code'
+                sh '''
+                sam build
+                sam deploy \
+                --template template.yaml \
+                --config-env production \
+                --stack-name production-todo-list-aws \
+                --region us-east-1 \
+                --resolve-s3 \
+                --capabilities CAPABILITY_IAM \
+                --parameter-overrides Stage="production" \
+                --no-disable-rollback \
+                --save-params \
+                --no-confirm-changeset \
+                --no-fail-on-empty-changeset
+                echo "---- WHO AM I? ----"
+                whoami
+                echo "---- HOSTNAME ----"
+                hostname
+                '''
+                script {
+                    env.BASE_URL = sh(returnStdout: true, script: "aws cloudformation describe-stacks --stack-name production-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text").trim()
+
+                    writeFile file: 'rest_api.txt', text: env.BASE_URL
+                }
+
+                stash name: 'updated_config', includes: 'samconfig.toml, rest_api.txt'
+            }
+        }
+
+        stage('Rest Test') {
+            agent { label 'agent-02' }
+            steps {
+                unstash name: 'code'
+                unstash name: 'updated_config'
+                script {
+                    env.BASE_URL = readFile('rest_api.txt').trim()
+                }
+                sh '''
+                python3 -m venv .venv
+                . .venv/bin/activate
+                echo "$BASE_URL"
+                pytest -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
+                echo "---- WHO AM I? ----"
+                whoami
+                echo "---- HOSTNAME ----"
+                hostname
+                '''
+            }
+        }
+
+        stage('Promote') {
+            agent { label 'built-in' }
+            steps {
+                unstash name: 'code'
+                unstash name: 'updated_config'
+                withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
+                    sh '''
+                    echo "---- UPDATE REMOTE URL ----"
+                    git config user.email "jenkins@yourdomain.com"
+                    git config user.name "Jenkins CI"
+                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
+
+                    echo "---- ADD SAMCONFIG ----"
+                    git checkout master
+                    git fetch origin master
+                    git add -A
+                    git commit -m "add samconfig.toml"
+
+                    echo "---- PUSH TO ORIGIN ----"
+                    git push origin master
+
+                    echo "---- WHO AM I? ----"
+                    whoami
+                    echo "---- HOSTNAME ----"
+                    hostname
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
