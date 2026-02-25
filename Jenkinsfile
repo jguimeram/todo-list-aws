@@ -49,14 +49,17 @@ pipeline {
 
         stage('Rest Test') {
             steps {
+                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                 echo '---- REST TESTS ----'
                 sh'''
                    python3 -m venv .venv
                    . .venv/bin/activate
                    export BASE_URL=$(aws cloudformation describe-stacks --stack-name production-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
                    echo $BASE_URL
-                   pytest -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
+                   pytest --junitxml=result-rest.xml -k "test_api_listtodos or test_api_gettodo" test/integration/todoApiTest.py
+                   junit testResults: '**/result-rest.xml', stdioRetention: 'ALL'
                   '''
+                 }
             }
         }
     }
