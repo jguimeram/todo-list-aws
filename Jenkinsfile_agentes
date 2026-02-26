@@ -87,36 +87,6 @@ pipeline {
                 '''
             }
         }
-
-        stage('Promote') {
-            agent { label 'built-in' }
-            steps {
-                unstash name: 'code'
-                unstash name: 'updated_config'
-                withCredentials([string(credentialsId: 'c88df4f8-f1d2-4b25-bbe2-da9d8ac9a94e', variable: 'GITHUB')]) {
-                    sh '''
-                    echo "---- UPDATE REMOTE URL ----"
-                    git config user.email "jenkins@yourdomain.com"
-                    git config user.name "Jenkins CI"
-                    git remote set-url origin https://jenkins:$GITHUB@github.com/jguimeram/todo-list-aws.git
-
-                    echo "---- ADD SAMCONFIG ----"
-                    git checkout master
-                    git fetch origin master
-                    git add -A
-                    git commit -m "add samconfig.toml"
-
-                    echo "---- PUSH TO ORIGIN ----"
-                    git push origin master
-
-                    echo "---- WHO AM I? ----"
-                    whoami
-                    echo "---- HOSTNAME ----"
-                    hostname
-                    '''
-                }
-            }
-        }
     }
 
     post {
