@@ -25,7 +25,7 @@ pipeline {
         }
 
         stage('Set Environment') {
-            agent { label 'python' }
+            agent { label 'agent-01' }
             steps {
                 unstash name: 'code'
                 sh '''
