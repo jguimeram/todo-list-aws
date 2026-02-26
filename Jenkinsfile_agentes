@@ -11,6 +11,10 @@ pipeline {
                 checkout scmGit(
                 branches: [[name: '*/master']],
                 userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                echo '---- DOWNLOAD SAMCONFIG ----'
+                sh'''
+                curl -L https://raw.githubusercontent.com/jguimeram/todo-list-aws-config/refs/heads/production/samconfig.toml -o samconfig.toml
+                '''
                 echo '---- WORKSPACE ----'
                 echo "${env.WORKSPACE}"
                 sh'''
@@ -25,7 +29,7 @@ pipeline {
         }
 
         stage('Set Environment') {
-            agent { label 'agent-01' }
+            agent { label 'python' }
             steps {
                 unstash name: 'code'
                 sh '''
@@ -47,18 +51,7 @@ pipeline {
                 unstash name: 'code'
                 sh '''
                 sam build
-                sam deploy \
-                --template template.yaml \
-                --config-env production \
-                --stack-name production-todo-list-aws \
-                --region us-east-1 \
-                --resolve-s3 \
-                --capabilities CAPABILITY_IAM \
-                --parameter-overrides Stage="production" \
-                --no-disable-rollback \
-                --save-params \
-                --no-confirm-changeset \
-                --no-fail-on-empty-changeset
+                sam deploy --stack-name production-todo-list-aws
                 echo "---- WHO AM I? ----"
                 whoami
                 echo "---- HOSTNAME ----"
@@ -75,7 +68,7 @@ pipeline {
         }
 
         stage('Rest Test') {
-            agent { label 'agent-02' }
+            agent { label 'python' }
             steps {
                 unstash name: 'code'
                 unstash name: 'updated_config'
