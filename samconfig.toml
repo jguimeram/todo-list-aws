@@ -14,3 +14,18 @@ Stage = "staging"
 
 [staging.global.parameters]
 region = "us-east-1"
+
+[production.deploy.parameters]
+template_file = "/var/lib/jenkins/workspace/todo-list-aws-ci_cd/todo-list-aws-cd-pipeline-agents/template.yaml"
+stack_name = "production-todo-list-aws"
+resolve_s3 = true
+capabilities = ["CAPABILITY_IAM"]
+disable_rollback = false
+confirm_changeset = false
+fail_on_empty_changeset = false
+
+[production.deploy.parameters.parameter_overrides]
+Stage = "production"
+
+[production.global.parameters]
+region = "us-east-1"
