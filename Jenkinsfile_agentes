@@ -11,6 +11,10 @@ pipeline {
                 checkout scmGit(
                     branches: [[name: '*/develop']],
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
+                echo '---- DOWNLOAD SAMCONFIG ----'
+                sh'''
+                curl -L https://raw.githubusercontent.com/jguimeram/todo-list-aws-config/refs/heads/staging/samconfig.toml -o samconfig.toml
+                '''
                 sh '''
                 echo "---- WHO AM I? ----"
                 whoami
@@ -22,7 +26,7 @@ pipeline {
         }
 
         stage('Set Environment') {
-            agent { label 'agent-01' }
+            agent { label 'python' }
             steps {
                 unstash name: 'code'
                 sh '''
@@ -76,7 +80,7 @@ pipeline {
                     }
                 }
             }
-        } // Closed Static Tests stage here
+        }
 
         stage('Deploy') {
             agent { label 'built-in' }
@@ -84,7 +88,7 @@ pipeline {
                 unstash name: 'code'
                 sh '''
                 sam build
-                sam deploy --template template.yaml --config-env staging --stack-name staging-todo-list-aws --region us-east-1 --resolve-s3 --capabilities CAPABILITY_IAM --no-disable-rollback --parameter-overrides Stage="staging" --save-params --no-confirm-changeset --no-fail-on-empty-changeset
+                sam deploy --config-env staging
                 echo "---- WHO AM I? ----"
                 whoami
                 echo "---- HOSTNAME ----"
@@ -133,15 +137,15 @@ pipeline {
                     echo "---- UPDATE CHANGELOG ----"
                     git checkout develop
                     git pull origin develop
-                    echo "Build #${env.BUILD_NUMBER}-R4AGENTS" >> CHANGELOG.md
+                    echo "Build #${env.BUILD_NUMBER}-R4CONFIG" >> CHANGELOG.md
                     git add -A
-                    git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R4AGENTS"
+                    git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R4CONFIG"
 
                     echo "---- MERGE TO MASTER ----"
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}-R4AGENTS" -m "Release version ${env.BUILD_NUMBER}-R4AGENTS"
+                    git tag -a "Release-${env.BUILD_NUMBER}-R4CONFIG" -m "Release version ${env.BUILD_NUMBER}-R4CONFIG"
 
                     echo "--- PUSH ----"
                     git push origin develop master --tags
@@ -159,7 +163,7 @@ pipeline {
     post {
         success {
             cleanWs()
-            build job: 'todo-list-aws-cd-pipeline-agents'
+            build job: 'todo-list-aws-cd-pipeline-config'
         }
     }
 }
