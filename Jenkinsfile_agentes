@@ -51,7 +51,7 @@ pipeline {
                 unstash name: 'code'
                 sh '''
                 sam build
-                sam deploy --stack-name production-todo-list-aws
+                sam deploy --config-env production
                 echo "---- WHO AM I? ----"
                 whoami
                 echo "---- HOSTNAME ----"
