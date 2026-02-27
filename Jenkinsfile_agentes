@@ -29,14 +29,14 @@ pipeline {
             agent { label 'built-in' }
             steps {
                 script {
-                    def commitMsg = sh(
+                    def comMsg = sh(
                         script: 'git log -1 --pretty=%B',
                         returnStdout: true
                     ).trim()
 
-                    if (commitMsg.endsWith('[skip cli]')) {
+                    if (comMsg.endsWith('[skip cli]')) {
                         currentBuild.result = 'NOT_BUILT'
-                        error('Skipping pipeline: commit message ends with [skip cli]')
+                        error('Skipping pipeline to avoid recursive loop')
                     }
                 }
             }
