@@ -180,7 +180,7 @@ pipeline {
     post {
         success {
             cleanWs()
-            build job: 'todo-list-aws-cd-pipeline-config'
+            build job: 'master', waitForStart: true
         }
     }
 }
