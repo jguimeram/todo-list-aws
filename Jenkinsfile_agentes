@@ -26,6 +26,7 @@ pipeline {
         }
 
         stage('Check Commit Message') {
+            agent { label 'built-in' }
             steps {
                 script {
                     def commitMsg = sh(
