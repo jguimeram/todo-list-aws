@@ -2,6 +2,21 @@ pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
+        stage('Check Commit Message') {
+            steps {
+                script {
+                    def commitMsg = sh(
+                        script: 'git log -1 --pretty=%B',
+                        returnStdout: true
+                    ).trim()
+
+                    if (commitMsg.endsWith('[skip cli]')) {
+                        currentBuild.result = 'NOT_BUILT'
+                        error('Skipping pipeline: commit message ends with [skip cli]')
+                    }
+                }
+            }
+        }
         stage('Get Code') {
             agent { label 'built-in' }
             steps {
@@ -137,15 +152,15 @@ pipeline {
                     echo "---- UPDATE CHANGELOG ----"
                     git checkout develop
                     git pull origin develop
-                    echo "Build #${env.BUILD_NUMBER}-R4CONFIG" >> CHANGELOG.md
+                    echo "Build #${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]" >> CHANGELOG.md
                     git add -A
-                    git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R4CONFIG"
+                    git commit -m "Update changelog - Build #${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]"
 
                     echo "---- MERGE TO MASTER ----"
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}-R4CONFIG" -m "Release version ${env.BUILD_NUMBER}-R4CONFIG"
+                    git tag -a "Release-${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]" -m "Release version ${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]"
 
                     echo "--- PUSH ----"
                     git push origin develop master --tags
