@@ -162,7 +162,7 @@ pipeline {
                     git checkout master
                     git pull origin master
                     git merge develop --no-edit
-                    git tag -a "Release-${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]" -m "Release version ${env.BUILD_NUMBER}-R5MBRANCH-[skip cli]"
+                    git tag -a "Release-${env.BUILD_NUMBER}-R5MBRANCH" -m "Release version ${env.BUILD_NUMBER}-R5MBRANCH"
 
                     echo "--- PUSH ----"
                     git push origin develop master --tags
