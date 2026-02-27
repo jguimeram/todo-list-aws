@@ -11,7 +11,6 @@ pipeline {
                 checkout scmGit(
                     branches: [[name: '*/develop']],
                     userRemoteConfigs: [[url: 'https://github.com/jguimeram/todo-list-aws']])
-
                 echo '---- DOWNLOAD SAMCONFIG ----'
                 sh'''
                 curl -L https://raw.githubusercontent.com/jguimeram/todo-list-aws-config/refs/heads/staging/samconfig.toml -o samconfig.toml
